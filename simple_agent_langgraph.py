@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import ToolNode, tools_condition
 
 from langchain_ollama import ChatOllama
 from langchain_core.messages import ToolMessage
@@ -44,6 +45,7 @@ class State(TypedDict):
     messages : Annotated[list, add_messages]
     
 def bot(state: State):
+    # print(f"-----------------> {state['messages']}")
     return {"messages" : [model_with_tools.invoke(state["messages"])]}
 
 def route_tools(state: State)-> Literal["tools", "__end__"]:
@@ -65,8 +67,14 @@ def route_tools(state: State)-> Literal["tools", "__end__"]:
     
 
 tool = TavilySearchResults(max_results = 2)
+
+# Method 1
 tools = [tool]
-tool_node = BasicToolNode(tools)
+# tool_node = BasicToolNode(tools)
+
+# Method 2
+tool_node = ToolNode(tools = [tool])
+
 
 model = ChatOllama(model = "llama3.1")
 model_with_tools = model.bind_tools(tools)
@@ -77,8 +85,10 @@ graph_builder.add_node("tools", tool_node)
 
 graph_builder.add_conditional_edges(
    "bot",
-   route_tools,
-   {"tools" : "tools", "__end__" : END} 
+   # Method 1
+#    route_tools,
+#    {"tools" : "tools", "__end__" : END} 
+   tools_condition
 )
 
 graph_builder.add_edge("tools", "bot")
