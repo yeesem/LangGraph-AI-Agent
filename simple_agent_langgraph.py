@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.checkpoint.memory import MemorySaver
 
 from langchain_ollama import ChatOllama
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import ToolMessage, BaseMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 
 load_dotenv()
@@ -21,6 +22,7 @@ class BasicToolNode:
         self.tools_by_name = {tool.name : tool for tool in tools}
         
     def __call__(self, inputs : dict):
+        
         if messages := inputs.get("messages", []):
             message = messages[-1]
         else:
@@ -66,6 +68,7 @@ def route_tools(state: State)-> Literal["tools", "__end__"]:
     return "__end__"
     
 
+# Add tool node
 tool = TavilySearchResults(max_results = 2)
 
 # Method 1
@@ -76,9 +79,14 @@ tools = [tool]
 tool_node = ToolNode(tools = [tool])
 
 
+# Define model
 model = ChatOllama(model = "llama3.1")
 model_with_tools = model.bind_tools(tools)
 
+# Add memory note
+memory = MemorySaver()
+
+# Construct graph
 graph_builder = StateGraph(State)
 graph_builder.add_node("bot", bot)
 graph_builder.add_node("tools", tool_node)
@@ -86,9 +94,10 @@ graph_builder.add_node("tools", tool_node)
 graph_builder.add_conditional_edges(
    "bot",
    # Method 1
-#    route_tools,
-#    {"tools" : "tools", "__end__" : END} 
-   tools_condition
+   route_tools,
+   {"tools" : "tools", "__end__" : END} 
+    # Method 2
+    # tools_condition
 )
 
 graph_builder.add_edge("tools", "bot")
@@ -96,14 +105,27 @@ graph_builder.add_edge("tools", "bot")
 graph_builder.set_entry_point("bot")
 graph_builder.set_finish_point("bot")
 
-graph = graph_builder.compile()
+
+# Compile graph
+graph = graph_builder.compile(checkpointer=memory)
+
+
+# Run the AI Agent
+config = {
+    "configurable" : {"thread_id" : 1}
+}
 
 while True:
     user_input = input("User : ")
     if user_input.lower() in ["quit", "exit", "q"]:
         print("Goodbye!")
         break
-    for event in graph.stream({"messages" : ("user", user_input)}):
+    for event in graph.stream({"messages" : ("user", user_input)}, config=config):
         for value in event.values():
-            print("Assistant : ", value["messages"][-1].content, "\n----------------------------------------------------\n")
+            if isinstance(value['messages'][-1], BaseMessage):
+                print("Assistant : ", value["messages"][-1].content, "\n----------------------------------------------------\n")
             
+            
+
+# snapshot = graph.get_state(config)
+# print(snapshot)
