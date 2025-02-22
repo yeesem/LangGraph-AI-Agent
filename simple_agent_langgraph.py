@@ -10,11 +10,13 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.checkpoint.memory import MemorySaver
 
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import ToolMessage, BaseMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 
 load_dotenv()
 os.environ["TAVILY_API_KEY"] = os.getenv("TAVILY_API_KEY")
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
 class BasicToolNode:
     """A node that runs the tools requested in the last AIMessage"""
@@ -80,8 +82,10 @@ tool_node = ToolNode(tools = [tool])
 
 
 # Define model
-model = ChatOllama(model = "llama3.1")
+model = ChatOllama(model = "MFDoom/deepseek-r1-tool-calling:8b")
+# model = ChatOpenAI(model = "gpt-4o-mini")
 model_with_tools = model.bind_tools(tools)
+
 
 # Add memory note
 memory = MemorySaver()
@@ -105,9 +109,12 @@ graph_builder.add_edge("tools", "bot")
 graph_builder.set_entry_point("bot")
 graph_builder.set_finish_point("bot")
 
-
+ 
 # Compile graph
-graph = graph_builder.compile(checkpointer=memory)
+graph = graph_builder.compile(
+    checkpointer=memory,
+    # interrupt_before = ["tools"]
+)
 
 
 # Run the AI Agent
@@ -125,7 +132,28 @@ while True:
             if isinstance(value['messages'][-1], BaseMessage):
                 print("Assistant : ", value["messages"][-1].content, "\n----------------------------------------------------\n")
             
-            
+
+
+# user_input = "What is the capital of Malaysia?"
+# events = graph.stream({"messages" : [("user", user_input)]}, config=config, stream_mode = "values")
+# for event in events:
+#     event['messages'][-1].pretty_print()            
 
 # snapshot = graph.get_state(config)
-# print(snapshot)
+# next_step = (
+#     snapshot.next
+# )
+
+# print(
+#     "\n===>>>", next_step
+# )
+
+# existing_message = snapshot.values['messages'][-1]
+# all_tools = existing_message.tool_calls
+
+# print("Tools to be called :: ", all_tools)
+
+# user_input = "What is the capital of Malaysia?"
+# events = graph.stream({"messages" : [("user", user_input)]}, config=config, stream_mode = "values")
+# for event in events:
+#     event['messages'][-1].pretty_print()
