@@ -21,4 +21,7 @@ graph_builder.add_node("bot", bot)
 graph_builder.set_entry_point("bot")
 graph_builder.set_finish_point("bot")
 
-graph = graph_builder.build()
+graph = graph_builder.compile()
+
+res = graph.invoke({"messages" : ["Hello, how are you?"]})
+print(res["messages"])
