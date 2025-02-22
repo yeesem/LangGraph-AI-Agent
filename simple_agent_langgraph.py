@@ -23,5 +23,14 @@ graph_builder.set_finish_point("bot")
 
 graph = graph_builder.compile()
 
-res = graph.invoke({"messages" : ["Hello, how are you?"]})
-print(res["messages"])
+# res = graph.invoke({"messages" : ["Hello, how are you?"]})
+# print(res["messages"])
+
+while True:
+    user_input = input("User : ")
+    if user_input.lower() in ["quit", "exit", "q"]:
+        print("Goodbye!")
+        break
+    for event in graph.stream({"messages" : ("user", user_input)}):
+        for value in event.values():
+            print("Assistant : ", value["messages"][-1].content)
