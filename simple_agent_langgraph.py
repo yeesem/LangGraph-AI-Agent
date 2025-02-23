@@ -82,7 +82,7 @@ tool_node = ToolNode(tools = [tool])
 
 
 # Define model
-model = ChatOllama(model = "MFDoom/deepseek-r1-tool-calling:8b")
+model = ChatOllama(model = "qwen2.5:14b")
 # model = ChatOpenAI(model = "gpt-4o-mini")
 model_with_tools = model.bind_tools(tools)
 
