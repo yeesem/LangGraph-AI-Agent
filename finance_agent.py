@@ -26,10 +26,10 @@ os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 memory = MemorySaver()
 
 # Define llm
-llm_name = "gpt-4o-mini"
-model = ChatOpenAI(model=llm_name)
-# llm_name = "qwen2.5:14b"
-# model = ChatOllama(model=llm_name)
+# llm_name = "gpt-4o-mini"
+# model = ChatOpenAI(model=llm_name)
+llm_name = "qwen2.5:14b"
+model = ChatOllama(model=llm_name)
 
 # Define tavily client
 tavily = TavilyClient()
