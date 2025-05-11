@@ -1,10 +1,12 @@
 import os
 
+import pytesseract
 import streamlit as st
+from pdf2image import convert_from_path
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.vectorstores import InMemoryVectorStore
-from lagnchain_ollama import OllamaEmbeddings
-from langchain_ollama.llms import OllamaLM
+from langchain_ollama import OllamaEmbeddings
+from langchain_ollama.llms import OllamaLLM
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from unstructured.partition.pdf import partition_pdf
 from unstructured.partition.utils.constants import PartitionStrategy
@@ -16,25 +18,37 @@ Context: {context}
 Answer:
 """
 
-pdfs_directory = "figtures/"
-figures_directory = "pdfs/"
+pdfs_directory = "pdfs/"
+figures_directory = "figures/"
 
-embeddings = OllamaEmbeddings(model = "llama3.2")
-vector_store = InMemoryVectorStore(embeddings)
+if "vector_store" not in st.session_state:
+    embeddings = OllamaEmbeddings(model = "llama3.2")
+    vector_store = InMemoryVectorStore(embeddings)
+    st.session_state.vector_store = vector_store
+else:
+    vector_store = st.session_state.vector_store
 
-model = OllamaLLM(model = "gemma3:4b")
+model = OllamaLLM(model = "gemma3:12b")
 
 def upload_pdf(file):
     with open(pdfs_directory + file.name, "wb") as f:
-        f.write(file.get.buffer())
+        f.write(file.getbuffer())
     
 def load_pdf(file_path):
-    elements = partition_pdf(
-        file_path,
-        strategy = PartitionStrategy.HI_RES,
-        extract_image_block_types = ['Image', 'Table'],
-        extract_image_block_output_dir = figures_directory
-    )
+    os.environ["PATH"] += os.pathsep + r"C:\Users\OON YEE SEM\Documents\OON YEE SEM\Self Learning\Generative AI\Coursera LangGraph\poppler-24.08.0\Library\bin"
+    os.environ["TESSDATA_PREFIX"] = r"C:\Program Files\Tesseract-OCR\tessdata"
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    
+    if "elements" not in st.session_state:
+        elements = partition_pdf(
+            file_path,
+            strategy = PartitionStrategy.HI_RES,
+            extract_image_block_types = ['Image', 'Table'],
+            extract_image_block_output_dir = figures_directory,
+        )
+        st.session_state.elements = elements
+    else:
+        elements = st.session_state.elements
     
     text_elements = [element.text for element in elements if element.category not in ['Image', 'Table']]
     
@@ -42,7 +56,7 @@ def load_pdf(file_path):
         extracted_text = extract_text(figures_directory + file)
         text_elements.append(extracted_text)
     
-    return "\n\n".join()
+    return "\n\n".join(text_elements)
 
 def extract_text(file_path):
     model_with_image_context = model.bind(images = [file_path])

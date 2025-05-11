@@ -1,2 +1,5 @@
 .env
 venv
+poppler-24.08.0
+pdfs
+figures
