@@ -10,3 +10,4 @@ tiktoken
 scikit-learn
 nomic[local]
 langgraph
+langchain_openai
