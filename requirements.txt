@@ -11,3 +11,4 @@ scikit-learn
 nomic[local]
 langgraph
 langchain_openai
+nest_asyncio
