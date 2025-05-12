@@ -9,3 +9,4 @@ langchain_nomic
 tiktoken
 scikit-learn
 nomic[local]
+langgraph
